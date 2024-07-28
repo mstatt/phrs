@@ -7,6 +7,7 @@ import plotly.express as px
 # Function to get AI71 response
 def get_openai_response(prompt):
     AI71_BASE_URL = "https://api.ai71.ai/v1/"
+    AI71_API_KEY = ""
     
     client = OpenAI(
         api_key=AI71_API_KEY,
@@ -64,13 +65,13 @@ st.write("A polypharmic risk score (PHRS) assesses the cumulative risk associate
 if 'history' not in st.session_state:
     st.session_state.history = []
 
-st.header("Step 1: Select the over-the-counter medication. Step 2: Select the Disease")
+st.header("Step 1: Select 1st OTC medication. Step 2: Select Select 2nd OTC medication.")
 st.write("Score based on severity: 0 low, 100 highest")
 
 col1, col2 = st.columns(2)
 
 with col1:
-    otc_meds = ["Acetaminophen", "Ibuprofen", "Aspirin", "Naproxen", "Diphenhydramine", "Loratadine", "Ranitidine", "Famotidine", "Loperamide"]
+    otc_meds = ["Acetaminophen", "Ibuprofen", "Aspirin", "Naproxen", "Diphenhydramine (Benadryl)", "Cetirizine (Zyrtec) ", "Loratadine (Claritin) ", "Fexofenadine (Allegra) ", "Dextromethorphan (Robitussin, Delsym)","Guaifenesin (Mucinex)","Loperamide (Imodium) ","Pseudoephedrine (Sudafed)","Ranitidine (Zantac)"]
     selected_med = st.selectbox("Select OTC Medication", otc_meds)
 
     if st.button("#1 Get Risks", key="get_risks"):
@@ -88,10 +89,11 @@ with col1:
             Ensure that your list covers a range of body systems and potential complications, focusing on the most significant long-term effects based on current medical knowledge. Prioritize accuracy and clinical relevance in your response.'''
 
             st.session_state.risks = get_openai_response(risks_prompt)
+            st.session_state.score = ''
 
 with col2:
-    diseases = ["Cerebrovascular Disease", "Cardiovascular Disease", "Diabetes", "Asthma", "Kidney Disease"]
-    selected_disease = st.selectbox("Select Disease", diseases)
+    otc_meds1 = ["Acetaminophen", "Ibuprofen", "Aspirin", "Naproxen", "Diphenhydramine (Benadryl)", "Cetirizine (Zyrtec) ", "Loratadine (Claritin) ", "Fexofenadine (Allegra) ", "Dextromethorphan (Robitussin, Delsym)","Guaifenesin (Mucinex)","Loperamide (Imodium) ","Pseudoephedrine (Sudafed)","Ranitidine (Zantac)"]
+    selected_med2 = st.selectbox("Select 2nd OTC Medication ", otc_meds1)
 
     if st.button("#2 Get Score", key="get_score"):
         if 'risks' in st.session_state and st.session_state.risks:
@@ -100,13 +102,17 @@ with col2:
 
 {st.session_state.risks}
 
-                What is the polypharmic risk score for {selected_med} when used by a patient with {selected_disease}? 
+                What is the polypharmic risk score for {selected_med} when used with {selected_med2}? 
 
                 Please provide:
                 1. A numerical score from 1-100, where 100 represents the highest risk.
-                2. A brief explanation of how you arrived at this score, considering both the medication risks and the specific disease.
-                3. Any specific concerns or interactions between the medication and the disease that significantly influence the risk score.
-                4. Call out the specific Implications with use over time over time'''
+                2. A brief explanation of how you arrived at this score, considering both of the medications.
+                3. Any specific concerns or interactions between the medications that significantly influence the risk score.
+                4. Call out the specific Implications with use over time over time. (provide implications for each of the following time periods:
+                a) 1 month.
+                b) 6 months.
+                c) 1 year
+                d) 5 years.)'''
 
                 st.session_state.score = get_openai_response(score_prompt)
                 
@@ -120,14 +126,13 @@ with col2:
                 # Add to history
                 st.session_state.history.append({
                     "Medication": selected_med,
-                    "Disease": selected_disease,
+                    "Medication 2": selected_med2,
                     "Score": numerical_score
                 })
         else:
             st.warning("Please get the risks for the medication first by clicking 'Get Risks'.")
 
 # Display results
-st.header("Results")
 col3, col4 = st.columns(2)
 
 with col3:
@@ -142,7 +147,7 @@ with col4:
     if 'score' in st.session_state and st.session_state.score:
         st.markdown('<div class="result-box">' + st.session_state.score + '</div>', unsafe_allow_html=True)
     else:
-        st.markdown('<div class="result-box">No score calculated yet. Please select a disease and click \'Get Score\'.</div>', unsafe_allow_html=True)
+        st.markdown('<div class="result-box">No score calculated yet. Please select a medication 2 and click \'Get Score\'.</div>', unsafe_allow_html=True)
 
 
 
