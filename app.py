@@ -22,6 +22,12 @@ def get_openai_response(prompt):
     )
     return response.choices[0].message.content.strip()
 
+# Function to format risks as a bulleted list
+def format_risks(risks):
+    risk_items = risks.split('\n')
+    formatted_risks = ''.join([f"<li>{item}</li>" for item in risk_items if item.strip()])
+    return f"<ul>{formatted_risks}</ul>"
+
 # Streamlit app
 st.set_page_config(page_title="Polypharmic Risk Score", layout="wide")
 
@@ -48,6 +54,7 @@ st.markdown("""
         border-radius: 5px;
         padding: 10px;
         margin-bottom: 20px;
+        min-height: 100px;
     }
     .info-box {
         background-color: #e7f3fe;
@@ -65,7 +72,7 @@ st.write("A polypharmic risk score (PHRS) assesses the cumulative risk associate
 if 'history' not in st.session_state:
     st.session_state.history = []
 
-st.header("Step 1: Select 1st OTC medication. Step 2: Select Select 2nd OTC medication.")
+st.header("Step 1: Select 1st OTC medication. Step 2: Select 2nd OTC medication.")
 st.write("Score based on severity: 0 low, 100 highest")
 
 col1, col2 = st.columns(2)
@@ -102,32 +109,25 @@ with col2:
 
 {st.session_state.risks}
 
-                What is the polypharmic risk score for {selected_med} when used with {selected_med2}? 
+                What is the polypharmic risk score on a scale of 1-100 with 100 being immediate mortality, for {selected_med} when used with {selected_med2}? 
 
                 Please provide:
                 1. A numerical score from 1-100, where 100 represents the highest risk.
                 2. A brief explanation of how you arrived at this score, considering both of the medications.
                 3. Any specific concerns or interactions between the medications that significantly influence the risk score.
                 4. Call out the specific Implications with use over time over time. (provide implications for each of the following time periods:
-                a) 1 month.
+                a) 1 month .
                 b) 6 months.
                 c) 1 year
-                d) 5 years.)'''
+                d) 5 years.'''
 
                 st.session_state.score = get_openai_response(score_prompt)
-                
-                # Extract numerical score from the response
-                score_line = st.session_state.score.split('\n')[0]
-                try:
-                    numerical_score = int(score_line.split(':')[1].strip().split()[0])
-                except:
-                    numerical_score = 0  # Default to 0 if parsing fails
                 
                 # Add to history
                 st.session_state.history.append({
                     "Medication": selected_med,
                     "Medication 2": selected_med2,
-                    "Score": numerical_score
+                    "Score": st.session_state.score.split('\n')[0]  # Assuming the score is the first line
                 })
         else:
             st.warning("Please get the risks for the medication first by clicking 'Get Risks'.")
@@ -136,20 +136,15 @@ with col2:
 col3, col4 = st.columns(2)
 
 with col3:
-    st.subheader("Risks:")
     if 'risks' in st.session_state and st.session_state.risks:
-        st.markdown('<div class="result-box">' + st.session_state.risks + '</div>', unsafe_allow_html=True)
-    else:
-        st.markdown('<div class="result-box">No risks fetched yet. Please select a medication and click \'Get Risks\'.</div>', unsafe_allow_html=True)
+        st.subheader("Risks:")
+        formatted_risks = format_risks(st.session_state.risks)
+        st.markdown(f'<div class="result-box">{formatted_risks}</div>', unsafe_allow_html=True)
 
 with col4:
-    st.subheader("Polypharmic Risk Score:")
     if 'score' in st.session_state and st.session_state.score:
-        st.markdown('<div class="result-box">' + st.session_state.score + '</div>', unsafe_allow_html=True)
-    else:
-        st.markdown('<div class="result-box">No score calculated yet. Please select a medication 2 and click \'Get Score\'.</div>', unsafe_allow_html=True)
-
-
+        st.subheader("Polypharmic Risk Score:")
+        st.markdown(f'<div class="result-box">{st.session_state.score}</div>', unsafe_allow_html=True)
 
 # Additional Information
 st.header("Additional Information")
