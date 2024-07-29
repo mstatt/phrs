@@ -43,7 +43,7 @@ To run this application locally, follow these steps:
    ```
 
 4. **Set Up API Key**:
-   Replace `YOUR_AI71_API_KEY` in the `config.py` file with your AI71 API key.
+   Replace `AI71_API_KEY = ""` in the `app.py` file with your AI71 API key.
 
 5. **Run the Application**:
    ```bash
@@ -53,7 +53,7 @@ To run this application locally, follow these steps:
 ## Usage
 
 1. Open the application in your browser at `http://localhost:8501`.
-2. Input the medication and illness details as prompted.
+2. Select the initial the medication and the 2nd medication from the dropdowns.
 3. Review the calculated Polypharmic Risk Score and the associated analysis.
 
 ## Limitations
