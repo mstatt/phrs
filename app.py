@@ -66,20 +66,37 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("Polypharmic Risk Score (PHRS)")
-st.write("A polypharmic risk score (PHRS) assesses the cumulative risk associated with the repeated use of over-the-counter medications over time. It is determined by evaluating the compounded effects of multiple medication exposures, each contributing to the overall risk based on their potential long-term impacts.")
+st.write("A polypharmic risk score (PHRS) assesses the cumulative risk associated with the repeated use of over-the-counter medications over time. It is determined by evaluating the compounded effects of multiple medication exposures, each contributing to the overall risk based on their potential long-term impacts. The polyPHarmic Risk Score was originally developed by Michael Stattelman and this solution was developed for submission in the AI71/lablab.ai FalconLLM hack-a-thon.")
 
 # Initialize session state
 if 'history' not in st.session_state:
     st.session_state.history = []
+
+if 'selected_med' not in st.session_state:
+    st.session_state.selected_med = None
+
+if 'risks_fetched' not in st.session_state:
+    st.session_state.risks_fetched = False
+
+if 'previous_med' not in st.session_state:
+    st.session_state.previous_med = None
 
 st.header("Step 1: Select 1st OTC medication. Step 2: Select 2nd OTC medication.")
 st.write("Score based on severity: 0 low, 100 highest")
 
 col1, col2 = st.columns(2)
 
+otc_meds = ["Acetaminophen", "Ibuprofen", "Aspirin", "Naproxen", "Diphenhydramine (Benadryl)", "Cetirizine (Zyrtec)", "Loratadine (Claritin)", "Fexofenadine (Allegra)", "Dextromethorphan (Robitussin, Delsym)","Guaifenesin (Mucinex)","Loperamide (Imodium)","Pseudoephedrine (Sudafed)","Ranitidine (Zantac)"]
+
 with col1:
-    otc_meds = ["Acetaminophen", "Ibuprofen", "Aspirin", "Naproxen", "Diphenhydramine (Benadryl)", "Cetirizine (Zyrtec) ", "Loratadine (Claritin) ", "Fexofenadine (Allegra) ", "Dextromethorphan (Robitussin, Delsym)","Guaifenesin (Mucinex)","Loperamide (Imodium) ","Pseudoephedrine (Sudafed)","Ranitidine (Zantac)"]
-    selected_med = st.selectbox("Select OTC Medication", otc_meds)
+    selected_med = st.selectbox("Select OTC Medication", otc_meds, key="med1")
+    
+    # Check if the selection has changed
+    if selected_med != st.session_state.previous_med:
+        st.session_state.risks_fetched = False
+        st.session_state.previous_med = selected_med
+    
+    st.session_state.selected_med = selected_med
 
     if st.button("#1 Get Risks", key="get_risks"):
         with st.spinner("Fetching risks..."):
@@ -97,19 +114,21 @@ with col1:
 
             st.session_state.risks = get_openai_response(risks_prompt)
             st.session_state.score = ''
+            st.session_state.risks_fetched = True
 
 with col2:
-    otc_meds1 = ["Acetaminophen", "Ibuprofen", "Aspirin", "Naproxen", "Diphenhydramine (Benadryl)", "Cetirizine (Zyrtec) ", "Loratadine (Claritin) ", "Fexofenadine (Allegra) ", "Dextromethorphan (Robitussin, Delsym)","Guaifenesin (Mucinex)","Loperamide (Imodium) ","Pseudoephedrine (Sudafed)","Ranitidine (Zantac)"]
-    selected_med2 = st.selectbox("Select 2nd OTC Medication ", otc_meds1)
+    # Filter out the selected medication from the first dropdown
+    remaining_meds = [med for med in otc_meds if med != st.session_state.selected_med]
+    selected_med2 = st.selectbox("Select 2nd OTC Medication", remaining_meds, key="med2")
 
-    if st.button("#2 Get Score", key="get_score"):
+    if st.button("#2 Get Score", key="get_score", disabled=not st.session_state.risks_fetched):
         if 'risks' in st.session_state and st.session_state.risks:
             with st.spinner("Calculating score..."):
-                score_prompt = f'''Based on the following risks associated with {selected_med}:
+                score_prompt = f'''Based on the following risks associated with {st.session_state.selected_med}:
 
 {st.session_state.risks}
 
-                What is the polypharmic risk score on a scale of 1-100 with 100 being immediate mortality, for {selected_med} when used with {selected_med2}? 
+                What is the polypharmic risk score on a scale of 1-100 with 100 being immediate mortality, for {st.session_state.selected_med} when used with {selected_med2}? 
 
                 Please provide:
                 1. A numerical score from 1-100, where 100 represents the highest risk.
@@ -125,7 +144,7 @@ with col2:
                 
                 # Add to history
                 st.session_state.history.append({
-                    "Medication": selected_med,
+                    "Medication": st.session_state.selected_med,
                     "Medication 2": selected_med2,
                     "Score": st.session_state.score.split('\n')[0]  # Assuming the score is the first line
                 })
